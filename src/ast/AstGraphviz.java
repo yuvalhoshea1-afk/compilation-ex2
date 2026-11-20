@@ -60,7 +60,7 @@ public class AstGraphviz
 		fileWriter.format(
 			"v%d [label = \"%s\"];\n",
 			nodeSerialNumber,
-			nodeName);
+			nodeName.replace("\"", "\\\""));
 	}
 
 	/***********************************/

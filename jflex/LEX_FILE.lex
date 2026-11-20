@@ -5,15 +5,15 @@
 /*************/
 /* USER CODE */
 /*************/
-   
+
 import java_cup.runtime.*;
 
 /******************************/
 /* DOLLAR DOLLAR - DON'T TOUCH! */
 /******************************/
-      
+
 %%
-   
+
 /************************************/
 /* OPTIONS AND DECLARATIONS SECTION */
 /************************************/
@@ -30,7 +30,7 @@ import java_cup.runtime.*;
 /********************************************************************/
 %line
 %column
-    
+
 /*******************************************************************************/
 /* Note that this has to be the EXACT same name of the class the CUP generates */
 /*******************************************************************************/
@@ -40,7 +40,7 @@ import java_cup.runtime.*;
 /* CUP compatibility mode interfaces with a CUP generated parser. */
 /******************************************************************/
 %cup
-   
+
 /****************/
 /* DECLARATIONS */
 /****************/
@@ -60,22 +60,28 @@ import java_cup.runtime.*;
 	/*******************************************/
 	/* Enable line number extraction from main */
 	/*******************************************/
-	public int getLine()    { return yyline + 1; }
+	public int getLine() { return yyline + 1; } 
 
 	/**********************************************/
 	/* Enable token position extraction from main */
 	/**********************************************/
-	public int getTokenStartPosition() { return yycolumn + 1; }
+	public int getTokenStartPosition() { return yycolumn + 1; } 
 %}
 
 /***********************/
 /* MACRO DECLARATIONS */
 /***********************/
-LineTerminator	= \r|\n|\r\n
-WhiteSpace		= {LineTerminator} | [ \t\f]
-INTEGER			= 0 | [1-9][0-9]*
-ID				= [a-zA-Z]+
-   
+LineTerminator = \r|\n|\r\n
+WhiteSpace     = {LineTerminator} | [ \t]
+ID             = [a-zA-Z][a-zA-Z0-9]*
+INT            = 0 | [1-9][0-9]*
+LEADING_ZERO   = 0[0-9]+
+STRING         = \"[a-zA-Z]*\"
+ValidCommentChars = [a-zA-Z0-9 \t\(\)\[\]\{\}\?\!\+\-\*\/\.\;]
+
+%state COMMENT_1
+%state COMMENT_2
+
 /******************************/
 /* DOLLAR DOLLAR - DON'T TOUCH! */
 /******************************/
@@ -85,7 +91,7 @@ ID				= [a-zA-Z]+
 /************************************************************/
 /* LEXER matches regular expressions to actions (Java code) */
 /************************************************************/
-   
+
 /**************************************************************/
 /* YYINITIAL is the state at which the lexer begins scanning. */
 /* So these regular expressions will only be matched if the   */
@@ -93,25 +99,73 @@ ID				= [a-zA-Z]+
 /**************************************************************/
 
 <YYINITIAL> {
-
-"if"				{ return symbol(TokenNames.IF);}
-"="					{ return symbol(TokenNames.EQ);}
-"."					{ return symbol(TokenNames.DOT);}
+"//"                { yybegin(COMMENT_1); }
+"/*"                { yybegin(COMMENT_2); }
 "+"					{ return symbol(TokenNames.PLUS);}
 "-"					{ return symbol(TokenNames.MINUS);}
 "*"					{ return symbol(TokenNames.TIMES);}
 "/"					{ return symbol(TokenNames.DIVIDE);}
-":="				{ return symbol(TokenNames.ASSIGN);}
+"="					{ return symbol(TokenNames.EQ);}
+"<"					{ return symbol(TokenNames.LT);}
+">"					{ return symbol(TokenNames.GT);}
+"and"				{ return symbol(TokenNames.AND);}
+"or"				{ return symbol(TokenNames.OR);}
 "("					{ return symbol(TokenNames.LPAREN);}
 ")"					{ return symbol(TokenNames.RPAREN);}
 "["					{ return symbol(TokenNames.LBRACK);}
 "]"					{ return symbol(TokenNames.RBRACK);}
 "{"					{ return symbol(TokenNames.LBRACE);}
 "}"					{ return symbol(TokenNames.RBRACE);}
+","					{ return symbol(TokenNames.COMMA);}
+"."					{ return symbol(TokenNames.DOT);}
 ";"					{ return symbol(TokenNames.SEMICOLON);}
-{ID}				{ return symbol(TokenNames.ID, yytext());}
-{INTEGER}			{ return symbol(TokenNames.INT, Integer.valueOf(yytext()));}
+":="				{ return symbol(TokenNames.ASSIGN);}
+"array"				{ return symbol(TokenNames.ARRAY);}
+"class"				{ return symbol(TokenNames.CLASS);}
+"extends"			{ return symbol(TokenNames.EXTENDS);}
+"new"				{ return symbol(TokenNames.NEW);}
+"nil"				{ return symbol(TokenNames.NIL);}
+"if"				{ return symbol(TokenNames.IF);}
+"else"				{ return symbol(TokenNames.ELSE);}
+"while"				{ return symbol(TokenNames.WHILE);}
+"return"			{ return symbol(TokenNames.RETURN);}
+"int"				{ return symbol(TokenNames.TYPE_INT);}
+"string"			{ return symbol(TokenNames.TYPE_STRING);}
+"void"				{ return symbol(TokenNames.TYPE_VOID);}
+{ID}				{ return symbol(TokenNames.ID,     yytext());}
+{LEADING_ZERO} {
+    return symbol(TokenNames.error);
+}
+
+{INT} {
+    try {
+        int val = Integer.parseInt(yytext());
+        if (val > 32767) {
+            return symbol(TokenNames.error);
+        }
+        return symbol(TokenNames.INT, val);
+    } catch (NumberFormatException e) {
+        return symbol(TokenNames.error);
+    }
+}
+{STRING}			{ return symbol(TokenNames.STRING, yytext());}
 {WhiteSpace}		{ /* just skip what was found, do nothing */ }
-{LineTerminator}	{ /* just skip what was found, do nothing */ }
 <<EOF>>				{ return symbol(TokenNames.EOF);}
+[^]                 { return symbol(TokenNames.error); }
+}
+
+
+<COMMENT_1>{
+{LineTerminator}				{yybegin(YYINITIAL);}
+{ValidCommentChars} {}
+<<EOF>>				{ return symbol(TokenNames.error);}
+[^]                 { return symbol(TokenNames.error); }
+}
+
+<COMMENT_2>{
+"*/"				{yybegin(YYINITIAL);}
+{ValidCommentChars} {}
+{LineTerminator}    {}
+<<EOF>>				{ return symbol(TokenNames.error);}
+[^]                 { return symbol(TokenNames.error); }
 }

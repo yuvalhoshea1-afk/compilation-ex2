@@ -1,5 +1,5 @@
 import java.io.*;
-import java.io.PrintWriter;
+
 import java_cup.runtime.Symbol;
 import ast.*;
 
@@ -7,10 +7,10 @@ public class Main
 {
 	static public void main(String argv[])
 	{
-		Lexer l;
+		Lexer l = null;
 		Parser p;
 		Symbol s;
-		AstStmtList ast;
+		AstDec ast;
 		FileReader fileReader;
 		PrintWriter fileWriter;
 		String inputFileName = argv[0];
@@ -41,7 +41,7 @@ public class Main
 			/***********************************/
 			/* [5] 3 ... 2 ... 1 ... Parse !!! */
 			/***********************************/
-			ast = (AstStmtList) p.parse().value;
+			ast = (AstDec) p.parse().value;
 			
 			/*************************/
 			/* [6] Print the AST ... */
@@ -51,6 +51,7 @@ public class Main
 			/*************************/
 			/* [7] Close output file */
 			/*************************/
+			fileWriter.print("OK");
 			fileWriter.close();
 			
 			/*************************************/
@@ -59,9 +60,30 @@ public class Main
 			AstGraphviz.getInstance().finalizeFile();
     	}
 			     
-		catch (Exception e)
+		catch (Throwable e)
 		{
-			e.printStackTrace();
+			try
+			{
+				fileWriter = new PrintWriter(outputFileName);
+				String msg = e.getMessage();
+				if (msg != null && msg.equals("LEXICAL_ERROR"))
+				{
+					fileWriter.print("ERROR");
+				}
+				else if (msg != null && msg.startsWith("SYNTAX_ERROR:"))
+				{
+					fileWriter.print("ERROR(" + msg.substring("SYNTAX_ERROR:".length()) + ")");
+				}
+				else
+				{
+					fileWriter.print("ERROR(" + (l != null ? l.getLine() : 0) + ")");
+				}
+				fileWriter.close();
+			}
+			catch (Exception ex)
+			{
+				ex.printStackTrace();
+			}
 		}
 	}
 }

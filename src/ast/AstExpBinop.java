@@ -39,8 +39,18 @@ public class AstExpBinop extends AstExp
 		/*********************************/
 		/* CONVERT op to a printable sop */
 		/*********************************/
-		if (op == 0) {sop = "+";}
-		if (op == 1) {sop = "-";}
+		switch (op) {
+			case 0: sop = "+"; break;
+			case 1: sop = "-"; break;
+			case 2: sop = "*"; break;
+			case 3: sop = "/"; break;
+			case 4: sop = "<"; break;
+			case 5: sop = ">"; break;
+			case 6: sop = "="; break;
+			case 7: sop = "and"; break;
+			case 8: sop = "or"; break;
+		}
+
 		
 		/*************************************/
 		/* AST NODE TYPE = AST BINOP EXP */
